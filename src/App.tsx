@@ -1,15 +1,18 @@
 /**
- * App — the single screen of the demo.
+ * App — two-column demo screen.
  *
- * Layout, top to bottom:
- *   1. Header with the agent's name + connection status
- *   2. Animated orb showing the agent's state
- *   3. Live transcript
- *   4. Start / End call button
+ * Left  (voice panel):  header · animated orb · live transcript · call button
+ * Right (agent panel):  a live calendar the agent books into by voice
+ *
+ * The "agentic" loop: the voice agent confirms a booking out loud → the
+ * transcript parser turns that into a book_appointment tool call → the
+ * calendar state updates → the day lights up in real time.
  */
 import { useVoiceAgent } from './hooks/useVoiceAgent';
+import { useCalendar } from './hooks/useCalendar';
 import { AgentOrb } from './components/AgentOrb';
 import { Transcript } from './components/Transcript';
+import { Calendar } from './components/Calendar';
 
 const STATE_LABELS: Record<string, string> = {
   idle: 'Connected',
@@ -20,7 +23,12 @@ const STATE_LABELS: Record<string, string> = {
 };
 
 export default function App() {
-  const { status, agentState, agentName, transcript, error, start, stop } = useVoiceAgent();
+  const { appointments, lastBookedId, book, remove, cancel, clearAll } = useCalendar();
+
+  const { status, agentState, agentName, transcript, error, start, stop } = useVoiceAgent({
+    onBooking: (call) => book(call.args),
+    onCancel: (call) => cancel(call.args),
+  });
 
   const isConnected = status === 'connected';
   const isConnecting = status === 'connecting';
@@ -32,43 +40,52 @@ export default function App() {
       : 'Tap the button to start a voice conversation';
 
   return (
-    <div className="app">
-      <header className="header">
-        <div className="header__badge">TRTC Conversational AI</div>
-        <h1 className="header__title">{agentName}</h1>
-        <p className="header__status">{statusLabel}</p>
-      </header>
+    <div className="layout">
+      <div className="app">
+        <header className="header">
+          <div className="header__badge">TRTC Conversational AI</div>
+          <h1 className="header__title">{agentName}</h1>
+          <p className="header__status">{statusLabel}</p>
+        </header>
 
-      <AgentOrb state={agentState} active={isConnected} />
+        <AgentOrb state={agentState} active={isConnected} />
 
-      <Transcript entries={transcript} agentName={agentName} />
+        <Transcript entries={transcript} agentName={agentName} />
 
-      {error && (
-        <div className="error" role="alert">
-          {error}
-        </div>
-      )}
-
-      <footer className="footer">
-        {isConnected ? (
-          <button className="button button--end" onClick={stop}>
-            End conversation
-          </button>
-        ) : (
-          <button className="button button--start" onClick={start} disabled={isConnecting}>
-            {isConnecting ? (
-              <>
-                <span className="spinner" /> Connecting…
-              </>
-            ) : (
-              <>
-                <MicIcon /> Start talking
-              </>
-            )}
-          </button>
+        {error && (
+          <div className="error" role="alert">
+            {error}
+          </div>
         )}
-        <p className="footer__hint">Built with the TRTC Web SDK — works in the browser and as a PWA.</p>
-      </footer>
+
+        <footer className="footer">
+          {isConnected ? (
+            <button className="button button--end" onClick={stop}>
+              End conversation
+            </button>
+          ) : (
+            <button className="button button--start" onClick={start} disabled={isConnecting}>
+              {isConnecting ? (
+                <>
+                  <span className="spinner" /> Connecting…
+                </>
+              ) : (
+                <>
+                  <MicIcon /> Start talking
+                </>
+              )}
+            </button>
+          )}
+          <p className="footer__hint">Ask {agentName} to book an appointment — watch the calendar →</p>
+        </footer>
+      </div>
+
+      <Calendar
+        appointments={appointments}
+        lastBookedId={lastBookedId}
+        onRemove={remove}
+        onClear={clearAll}
+      />
     </div>
   );
 }

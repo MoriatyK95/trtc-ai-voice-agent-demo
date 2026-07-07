@@ -17,3 +17,18 @@ export type AgentState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'inter
 
 /** Connection lifecycle of a voice session. */
 export type SessionStatus = 'disconnected' | 'connecting' | 'connected';
+
+/**
+ * A calendar appointment the agent booked on the user's behalf.
+ * `date` is a plain YYYY-MM-DD string (local day, no timezone math needed
+ * for a demo calendar). `time` is optional free-text like "3pm".
+ */
+export interface Appointment {
+  id: string;
+  /** YYYY-MM-DD */
+  date: string;
+  title: string;
+  time?: string;
+  /** When the agent created it — used to animate the newest one. */
+  createdAt: number;
+}
