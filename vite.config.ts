@@ -2,12 +2,13 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// During development the React app runs on Vite (port 5173) and the API
-// runs on Express (port 3001). This proxy forwards /api/* calls so the
+// During development the React app runs on Vite (port 5174) and the API
+// runs on Express (port 3002). This proxy forwards /api/* calls so the
 // browser only ever talks to one origin.
+// (Default ports 5173/3001 are avoided — another local project uses them.)
 const apiProxy = {
   '/api': {
-    target: 'http://localhost:3001',
+    target: 'http://localhost:3002',
     changeOrigin: true,
   },
 };
@@ -42,6 +43,6 @@ export default defineConfig({
       },
     }),
   ],
-  server: { proxy: apiProxy },
-  preview: { proxy: apiProxy },
+  server: { port: 5174, proxy: apiProxy },
+  preview: { port: 5174, proxy: apiProxy },
 });

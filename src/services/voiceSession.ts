@@ -73,12 +73,18 @@ export async function startVoiceSession(
       const message = JSON.parse(new TextDecoder().decode(event.data));
 
       if (message.type === 10000 && message.payload?.text) {
-        const { text, end, roundid, userid } = message.payload;
+        const { text, end, roundid } = message.payload;
+        // The speaker's userId is the TOP-LEVEL `sender` field per the TRTC
+        // subtitle spec (https://trtc.io/document/68333) — NOT payload.userid.
+        // Fall back to payload.userid for older/edge message shapes.
+        const sender: string = message.sender ?? message.payload?.userid ?? '';
         callbacks.onSubtitle({
-          // roundid groups partial results of the same sentence, so the UI
-          // can update one bubble in place instead of appending duplicates.
-          id: `${userid}_${roundid}`,
-          role: userid === botUserId ? 'assistant' : 'user',
+          // sender + roundid groups partial results of the same sentence, so
+          // the UI updates one bubble in place instead of appending duplicates.
+          // Including sender guarantees the user's and agent's bubbles stay
+          // distinct even if their roundids ever collide.
+          id: `${sender}_${roundid}`,
+          role: sender === botUserId ? 'assistant' : 'user',
           text,
           end: Boolean(end),
         });
